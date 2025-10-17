@@ -68,9 +68,3 @@ button:focus-visible {
 }
 
 
-/* src/index.css o main.css */
-html, body, #root {
-  height: 100%;
-  width: 100%;
-  padding: 0;
-}
