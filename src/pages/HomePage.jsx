@@ -14,11 +14,13 @@ import {
   useMediaQuery,
   Switch,
   FormControlLabel,
+  Badge
 } from '@mui/material';
 
 import { useTheme } from '@mui/material/styles';
 import MenuIcon from '@mui/icons-material/Menu';
 import AccountCircle from '@mui/icons-material/AccountCircle';
+import NotificationsIcon from '@mui/icons-material/Notifications';
 
 import { useFetchWithAuth } from './../helper/api';
 
@@ -54,6 +56,9 @@ function HomePage({ toggleTheme, mode }) {
   const userMenuOpen = Boolean(userMenuAnchorEl);
   const ibanMenuOpen = Boolean(ibanMenuAnchorEl);
 
+  // 🔔 Stato per contatore notifiche
+  const [unreadCount, setUnreadCount] = useState(0);
+
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
@@ -78,6 +83,17 @@ function HomePage({ toggleTheme, mode }) {
       }
     };
     fetchIbans();
+
+    // 🔔 Simulazione fetch notifiche
+    const fetchNotifiche = async () => {
+      try {
+        // Simula fetch notifiche (da rimpiazzare con chiamata reale)
+        setUnreadCount(3); // Notifiche non lette
+      } catch (err) {
+        console.error('Errore nel recupero notifiche:', err);
+      }
+    };
+    fetchNotifiche();
   }, [fetchWithAuth]);
 
   const handleUserMenuOpen = (event) => {
@@ -181,7 +197,12 @@ function HomePage({ toggleTheme, mode }) {
             label={mode === 'dark' ? 'Dark' : 'Light'}
             sx={{ mr: 2 }}
           />
-
+          {/* 🔔 Icona notifiche */}
+          <IconButton size="large" color="inherit" sx={{ mr: 1 }}>
+            <Badge badgeContent={unreadCount} color="error">
+              <NotificationsIcon />
+            </Badge>
+          </IconButton>
           {/* Username */}
           <Typography variant="body2" sx={{ mr: 1, display: { xs: 'none', sm: 'block' } }}>
             {username}
