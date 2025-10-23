@@ -9,6 +9,7 @@ import SignPage from './pages/SignPage';
 import { CssBaseline } from '@mui/material';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { useMemo, useState, useEffect } from 'react';
+import DettaglioCarta from './pages/DettaglioCarta';
 
 function App() {
   // Recupera il tema salvato al primo render
@@ -43,6 +44,8 @@ function App() {
         >
           <Route path="profilo" element={<DettaglioCliente />} />
           <Route path="conto-corrente" element={<DettaglioContoCorrente />} />
+          <Route path="dettaglio-carta/:numeroCarta" element={<DettaglioCarta />} />
+
         </Route>
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="*" element={<Navigate to="/login" replace />} />

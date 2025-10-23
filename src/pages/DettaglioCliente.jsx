@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
   Box,
@@ -23,7 +23,12 @@ import {
 } from '@mui/material';
 import MuiAlert from '@mui/material/Alert';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import CreditCard from '../components/CreditCard';
 import { useFetchWithAuth } from '../helper/api';
+import { useNavigate } from 'react-router-dom';
+
 
 const styleModal = {
   position: 'absolute',
@@ -44,12 +49,13 @@ const apiMap = {
 };
 
 const formatDataItaliana = (dataIso) => {
-    if (!dataIso) return '';
-    const data = new Date(dataIso);
-    return data.toLocaleDateString('it-IT');
+  if (!dataIso) return '';
+  const data = new Date(dataIso);
+  return data.toLocaleDateString('it-IT');
 };
 
 function DettaglioCliente() {
+  const navigate = useNavigate();
   const location = useLocation();
   const fetchWithAuth = useFetchWithAuth();
 
@@ -66,10 +72,19 @@ function DettaglioCliente() {
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState('success');
 
+  const scrollRef = useRef(null);
+
   const showSnackbar = (message, severity = 'success') => {
     setSnackbarMessage(message);
     setSnackbarSeverity(severity);
     setSnackbarOpen(true);
+  };
+
+  const scroll = (dir) => {
+    if (scrollRef.current) {
+      const amount = 300;
+      scrollRef.current.scrollBy({ left: dir === 'left' ? -amount : amount, behavior: 'smooth' });
+    }
   };
 
   useEffect(() => {
@@ -138,7 +153,7 @@ function DettaglioCliente() {
       });
 
       if (!response.ok) throw new Error(`Errore aggiornamento: ${response.status}`);
-      setDatiCliente(prev => ({ ...prev, [fieldToEdit]: fieldValue }));
+      setDatiCliente((prev) => ({ ...prev, [fieldToEdit]: fieldValue }));
       handleCloseModal();
       showSnackbar('Dati aggiornati con successo!', 'success');
     } catch (err) {
@@ -164,12 +179,118 @@ function DettaglioCliente() {
     }
   };
 
-  if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}><CircularProgress /></Box>;
-  if (error) return <Box sx={{ mt: 4 }}><Alert severity="error">{error}</Alert></Box>;
-  if (!datiCliente) return <Box sx={{ mt: 4 }}><Alert severity="info">Nessun dato del cliente disponibile.</Alert></Box>;
+  if (loading)
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+        <CircularProgress />
+      </Box>
+    );
+
+  if (error)
+    return (
+      <Box sx={{ mt: 4 }}>
+        <Alert severity="error">{error}</Alert>
+      </Box>
+    );
+
+  if (!datiCliente)
+    return (
+      <Box sx={{ mt: 4 }}>
+        <Alert severity="info">Nessun dato del cliente disponibile.</Alert>
+      </Box>
+    );
 
   return (
     <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
+      {/* Sezione Carte */}
+      {datiCliente.carteAssociate?.length > 0 ? (
+        <Box sx={{ position: 'relative', mb: 4 }}>
+          <Typography variant="h6" gutterBottom>
+            Le tue carte
+          </Typography>
+
+          {/* Pulsante sinistra */}
+          <IconButton
+            onClick={() => scroll('left')}
+            sx={{
+              position: 'absolute',
+              left: -10,
+              top: '45%',
+              zIndex: 1,
+              backgroundColor: 'background.paper',
+            }}
+          >
+            <ChevronLeftIcon />
+          </IconButton>
+
+          {/* Contenitore carte */}
+          <Box
+            ref={scrollRef}
+            sx={{
+              display: 'flex',
+              overflowX: 'auto',
+              gap: 2,
+              scrollBehavior: 'smooth',
+              py: 2,
+              px: 5,
+              '&::-webkit-scrollbar': { height: 6 },
+              '&::-webkit-scrollbar-thumb': {
+                backgroundColor: '#888',
+                borderRadius: 3,
+              },
+              '&::-webkit-scrollbar-thumb:hover': { backgroundColor: '#555' },
+            }}
+          >
+            {datiCliente.carteAssociate.map((carta, index) => (
+
+              <Box key={index}
+                sx={{
+                  flex: '0 0 auto',
+                  minWidth: 280,
+                  cursor: 'pointer',
+                  transition: 'all 0.25s ease',
+                  borderRadius: 2,
+                  boxShadow: 2,
+                  '&:hover': {
+                    transform: 'translateY(-6px)',
+                    boxShadow: 6,
+                    backgroundColor: 'rgba(25, 118, 210, 0.1)', // leggero blu al passaggio del mouse
+                  },
+                }}
+                onClick={() => navigate(`/home/dettaglio-carta/${carta}`)}
+
+              >
+
+                <CreditCard
+                  cardNumber={carta}
+                  cardHolder={`${datiCliente.nome} ${datiCliente.cognome}`}
+                  expiry={carta.scadenza || '10/29'}
+                />
+              </Box>
+            ))}
+          </Box>
+
+          {/* Pulsante destra */}
+          <IconButton
+            onClick={() => scroll('right')}
+            sx={{
+              position: 'absolute',
+              right: -10,
+              top: '45%',
+              zIndex: 1,
+              backgroundColor: 'background.paper',
+            }}
+          >
+            <ChevronRightIcon />
+          </IconButton>
+        </Box>
+      ) : (
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
+          Nessuna carta associata al tuo profilo.
+        </Typography>
+      )}
+
+      {/* Dati Cliente */}
       <Paper elevation={2} sx={{ p: { xs: 2, sm: 3 } }}>
         <Grid container rowSpacing={2} columnSpacing={6}>
           {[
@@ -203,6 +324,7 @@ function DettaglioCliente() {
         </Grid>
       </Paper>
 
+      {/* Conti correnti */}
       <Box sx={{ mt: 4 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
           <Typography variant="h6">Conti Correnti</Typography>
@@ -243,8 +365,12 @@ function DettaglioCliente() {
             required
           />
           <Stack direction="row" spacing={2} justifyContent="flex-end" mt={2}>
-            <Button onClick={handleCloseModal} color="secondary">Annulla</Button>
-            <Button type="submit" variant="contained" disabled={fieldValue === originalValue}>Salva</Button>
+            <Button onClick={handleCloseModal} color="secondary">
+              Annulla
+            </Button>
+            <Button type="submit" variant="contained" disabled={fieldValue === originalValue}>
+              Salva
+            </Button>
           </Stack>
         </Box>
       </Modal>
@@ -253,9 +379,7 @@ function DettaglioCliente() {
       <Dialog open={confirmDialogOpen} onClose={() => setConfirmDialogOpen(false)}>
         <DialogTitle>Conferma</DialogTitle>
         <DialogContent>
-          <DialogContentText>
-            Sei sicuro di voler creare un nuovo conto corrente?
-          </DialogContentText>
+          <DialogContentText>Sei sicuro di voler creare un nuovo conto corrente?</DialogContentText>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setConfirmDialogOpen(false)}>Annulla</Button>
@@ -272,12 +396,7 @@ function DettaglioCliente() {
         onClose={() => setSnackbarOpen(false)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
-        <MuiAlert
-          elevation={6}
-          variant="filled"
-          onClose={() => setSnackbarOpen(false)}
-          severity={snackbarSeverity}
-        >
+        <MuiAlert elevation={6} variant="filled" onClose={() => setSnackbarOpen(false)} severity={snackbarSeverity}>
           {snackbarMessage}
         </MuiAlert>
       </Snackbar>
