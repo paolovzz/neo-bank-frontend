@@ -202,13 +202,6 @@ function HomePage({ toggleTheme, mode }) {
             sx={{ mr: 2 }}
           />
 
-          {/* Icona notifiche */}
-          <IconButton size="large" color="inherit" sx={{ mr: 1 }}>
-            <Badge badgeContent={unreadCount} color="error">
-              <NotificationsIcon />
-            </Badge>
-          </IconButton>
-
           {/* Username */}
           <Typography variant="body2" sx={{ mr: 1, display: { xs: 'none', sm: 'block' } }}>
             {username}

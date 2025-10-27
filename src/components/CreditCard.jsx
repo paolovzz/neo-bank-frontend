@@ -118,28 +118,8 @@ export default function CreditCard({
               <div className="label">Scadenza</div>
               <div className="value">{expiry}</div>
             </div>
-
-            <div className="status">
-              <div className={`luhn ${valid ? "ok" : "bad"}`}>
-                {valid ? "Valid" : "Invalid"}
-              </div>
-
-              <button
-                className="toggle"
-                type="button"
-                onClick={() => setShowFull((s) => !s)}
-                aria-pressed={showFull}
-                aria-label={showFull ? "Nascondi numero completo" : "Mostra numero completo"}
-              >
-                {showFull ? "Nascondi" : "Mostra"}
-              </button>
-            </div>
           </div>
         </div>
-      </div>
-
-      <div className="cc-footnote">
-        <small>Solo per visualizzazione. Non memorizzare PAN non tokenizzati in chiaro.</small>
       </div>
     </div>
   );

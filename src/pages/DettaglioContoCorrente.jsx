@@ -64,6 +64,7 @@ function DettaglioContoCorrente() {
   const fetchWithAuth = useFetchWithAuth();
 
   const [bonificoModalOpen, setBonificoModalOpen] = useState(false);
+  const [richiediCartaModalOpen, setRichiediCartaModalOpen] = useState(false);
   const [ibanDestinatario, setIbanDestinatario] = useState('');
   const [importo, setImporto] = useState('');
   const [causale, setCausale] = useState('');
@@ -187,7 +188,12 @@ function DettaglioContoCorrente() {
     setFormErrors({});
     setBonificoModalOpen(true);
   };
+  const handleOpenRichiediCartaModal = () => {
+    setRichiediCartaModalOpen(true);
+  };
+
   const handleCloseBonificoModal = () => setBonificoModalOpen(false);
+  const handleCloseRichiediCartaModal = () => setRichiediCartaModalOpen(false);
 
   const validateBonificoForm = () => {
     const errors = {};
@@ -248,6 +254,33 @@ function DettaglioContoCorrente() {
     }
   };
 
+  const handleSubmitRichiestaCarta = async () => {
+
+    const body = {
+      iban: conto.iban,
+    };
+
+    try {
+      const response = await fetchWithAuth(`${import.meta.env.VITE_API_BASE_URL}/carte`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!response.ok) throw new Error('Errore durante la richiesta della nuova carta');
+
+      setSnackbar({ open: true, message: 'Carta richiesta con successo.', severity: 'success' });
+      handleCloseRichiediCartaModal();
+        // --- Refresh della pagina dopo 3 secondi ---
+      setTimeout(() => {
+        fetchCarteAssociate(); // Ricarica le carte associate
+      }, 1500);
+
+    } catch (error) {
+      console.error(error);
+      setSnackbar({ open: true, message: 'Errore durante l’invio del bonifico.', severity: 'error' });
+    }
+  };
+
   const handleChangePage = (event, newPage) => setPage(newPage);
   const handleChangeRowsPerPage = (event) => {
     setRowsPerPage(+event.target.value);
@@ -300,8 +333,12 @@ function DettaglioContoCorrente() {
 
       {/* --- Carte associate --- */}
       <Box sx={{ position: 'relative', mb: 4 }}>
-        <Typography variant="h6" gutterBottom>Carte associate</Typography>
-
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+        <Typography variant="h5">Carte associate</Typography>
+        <Button variant="contained" color="primary" onClick={handleOpenRichiediCartaModal}>
+          Richiedi carta
+        </Button>
+      </Box>
         {loadingCarte ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
             <CircularProgress size={32} />
@@ -489,6 +526,17 @@ function DettaglioContoCorrente() {
           <Stack direction="row" spacing={2} sx={{ justifyContent: 'flex-end' }}>
             <Button onClick={handleCloseBonificoModal}>Annulla</Button>
             <Button variant="contained" onClick={handleSubmitBonifico}>Invia</Button>
+          </Stack>
+        </Box>
+      </Modal>
+
+      {/* --- Modal richiedi carta --- */}
+      <Modal open={richiediCartaModalOpen} onClose={handleCloseRichiediCartaModal}>
+        <Box sx={styleModal}>
+          <Typography variant="h6" gutterBottom>Sicuro di voler richiedere una nuova carta?</Typography>
+          <Stack direction="row" spacing={2} sx={{ justifyContent: 'flex-end' }}>
+            <Button onClick={handleCloseRichiediCartaModal}>Annulla</Button>
+            <Button variant="contained" onClick={handleSubmitRichiestaCarta}>Invia</Button>
           </Stack>
         </Box>
       </Modal>
