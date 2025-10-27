@@ -1,28 +1,32 @@
-import React, { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
 import {
-  Box,
-  Typography,
-  Paper,
-  CircularProgress,
   Alert,
+  Box,
+  Button,
+  CircularProgress,
+  Grid,
   Link,
   Modal,
-  TextField,
-  Button,
-  Stack,
+  Paper,
   Snackbar,
-  Grid,
+  Stack,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
-  TableRow,
   TablePagination,
+  TableRow,
+  TextField,
+  Typography,
+  IconButton,
 } from '@mui/material';
-import { useFetchWithAuth } from '../helper/api';
 import MuiAlert from '@mui/material/Alert';
+import { useEffect, useState, useRef } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import CreditCard from '../components/CreditCard';
+import { useFetchWithAuth } from '../helper/api';
 
 const styleModal = {
   position: 'absolute',
@@ -36,9 +40,10 @@ const styleModal = {
   p: 4,
 };
 
-function DettaglioContocorrentePage() {
+function DettaglioContoCorrente() {
   const location = useLocation();
   const { iban } = location.state || {};
+  const navigate = useNavigate();
 
   const [conto, setConto] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -52,15 +57,27 @@ function DettaglioContocorrentePage() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
 
+  const [carteAssociate, setCarteAssociate] = useState([]);
+  const [loadingCarte, setLoadingCarte] = useState(true);
+  const [errorCarte, setErrorCarte] = useState('');
+
   const fetchWithAuth = useFetchWithAuth();
 
-  // Stato per il modal bonifico
   const [bonificoModalOpen, setBonificoModalOpen] = useState(false);
   const [ibanDestinatario, setIbanDestinatario] = useState('');
   const [importo, setImporto] = useState('');
   const [causale, setCausale] = useState('');
   const [formErrors, setFormErrors] = useState({});
 
+  const scrollRef = useRef(null);
+  const scroll = (dir) => {
+    if (scrollRef.current) {
+      const amount = 300;
+      scrollRef.current.scrollBy({ left: dir === 'left' ? -amount : amount, behavior: 'smooth' });
+    }
+  };
+
+  // --- FETCH CONTO ---
   const fetchConto = async () => {
     try {
       setLoading(true);
@@ -76,9 +93,26 @@ function DettaglioContocorrentePage() {
     }
   };
 
+  // --- FETCH CARTE ASSOCIATE ---
+  const fetchCarteAssociate = async () => {
+    try {
+      setLoadingCarte(true);
+      const response = await fetchWithAuth(`${import.meta.env.VITE_API_BASE_URL}/carte/iban/${iban}`);
+      if (!response.ok) throw new Error(`Errore caricamento carte: ${response.status}`);
+      const data = await response.json();
+      setCarteAssociate(data);
+    } catch (err) {
+      console.error(err);
+      setErrorCarte('Errore durante il recupero delle carte associate.');
+    } finally {
+      setLoadingCarte(false);
+    }
+  };
+
   useEffect(() => {
     if (iban) {
       fetchConto();
+      fetchCarteAssociate();
       setTransactions([
         {
           idOperazione: 'OP-001',
@@ -94,34 +128,6 @@ function DettaglioContocorrentePage() {
           importo: -78.9,
           causale: 'Bonifico amico',
         },
-        {
-          idOperazione: 'OP-003',
-          dataOperazione: '2025-10-08',
-          iban: 'IT56CCCC3456789012345678901',
-          importo: 230.0,
-          causale: 'Acquisto online',
-        },
-        {
-          idOperazione: 'OP-004',
-          dataOperazione: '2025-10-10',
-          iban: 'IT78DDDD4567890123456789012',
-          importo: -45.25,
-          causale: 'Rimborso',
-        },
-        {
-          idOperazione: 'OP-005',
-          dataOperazione: '2025-10-12',
-          iban: 'IT90EEEE5678901234567890123',
-          importo: 500.0,
-          causale: 'Stipendio',
-        },
-        {
-          idOperazione: 'OP-006',
-          dataOperazione: '2025-10-15',
-          iban: 'IT11FFFF6789012345678901234',
-          importo: -60.0,
-          causale: 'Pagamento servizio',
-        },
       ]);
     } else {
       setError('IBAN non specificato.');
@@ -129,18 +135,17 @@ function DettaglioContocorrentePage() {
     }
   }, [iban]);
 
+  // --- MODIFICA SOGLIE ---
   const handleOpenModal = (fieldName, currentValue) => {
     setFieldToEdit(fieldName);
     setFieldValue(currentValue != null ? currentValue : '');
     setModalOpen(true);
   };
-
   const handleCloseModal = () => {
     setModalOpen(false);
     setFieldToEdit('');
     setFieldValue('');
   };
-
   const handleSave = async () => {
     if (!fieldToEdit) return handleCloseModal();
 
@@ -150,7 +155,7 @@ function DettaglioContocorrentePage() {
 
       if (fieldToEdit === 'sogliaBonificiGiornaliera') {
         endpoint = `${import.meta.env.VITE_API_BASE_URL}/cc/soglia-bonifico-giornaliera`;
-        body = { nuovaSoglia: parseInt(fieldValue, 10), iban: conto.iban};
+        body = { nuovaSoglia: parseInt(fieldValue, 10), iban: conto.iban };
       } else if (fieldToEdit === 'sogliaBonificiMensile') {
         endpoint = `${import.meta.env.VITE_API_BASE_URL}/cc/soglia-bonifico-mensile`;
         body = { nuovaSoglia: parseInt(fieldValue, 10), iban: conto.iban };
@@ -174,6 +179,7 @@ function DettaglioContocorrentePage() {
     }
   };
 
+  // --- BONIFICO ---
   const handleOpenBonificoModal = () => {
     setIbanDestinatario('');
     setImporto('');
@@ -181,10 +187,7 @@ function DettaglioContocorrentePage() {
     setFormErrors({});
     setBonificoModalOpen(true);
   };
-
-  const handleCloseBonificoModal = () => {
-    setBonificoModalOpen(false);
-  };
+  const handleCloseBonificoModal = () => setBonificoModalOpen(false);
 
   const validateBonificoForm = () => {
     const errors = {};
@@ -193,17 +196,14 @@ function DettaglioContocorrentePage() {
     if (!ibanDestinatario || !ibanRegex.test(ibanDestinatario)) {
       errors.ibanDestinatario = 'IBAN non valido (deve iniziare con IT...)';
     } else if (ibanDestinatario === iban) {
-      errors.ibanDestinatario = 'L\'IBAN del destinatario non può essere uguale a quello del mittente';
+      errors.ibanDestinatario = "L'IBAN del destinatario non può essere uguale a quello del mittente";
     }
-
     if (!importo || isNaN(importo) || Number(importo) <= 0) {
       errors.importo = 'Inserire un importo valido maggiore di 0';
     }
-
-    if (Number(importo) > conto.saldoDisponibile) {
-      errors.importo = "Inserire un importo minore rispetto al saldo disponibile ";
+    if (conto && Number(importo) > conto.saldoDisponibile) {
+      errors.importo = 'Inserire un importo minore rispetto al saldo disponibile';
     }
-
     if (!causale || causale.length < 2) {
       errors.causale = 'Inserire una causale valida';
     }
@@ -216,7 +216,7 @@ function DettaglioContocorrentePage() {
     if (!validateBonificoForm()) return;
 
     const body = {
-      ibanMittente: conto.iban, // l'iban del conto corrente visualizzato
+      ibanMittente: conto.iban,
       ibanDestinatario,
       importo: parseFloat(importo),
       causale,
@@ -225,21 +225,13 @@ function DettaglioContocorrentePage() {
     try {
       const response = await fetchWithAuth(`${import.meta.env.VITE_API_BASE_URL}/cc/predisponi-bonifico`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
-
       if (!response.ok) throw new Error('Errore durante l’invio del bonifico');
 
-      setSnackbar({
-        open: true,
-        message: 'Bonifico inviato con successo.',
-        severity: 'success',
-      });
+      setSnackbar({ open: true, message: 'Bonifico inviato con successo.', severity: 'success' });
 
-      // Aggiorna transazioni localmente (opzionale)
       const nuovaTransazione = {
         idOperazione: `OP-${transactions.length + 1}`,
         dataOperazione: new Date().toISOString().split('T')[0],
@@ -249,18 +241,12 @@ function DettaglioContocorrentePage() {
       };
 
       setTransactions(prev => [nuovaTransazione, ...prev]);
-
       handleCloseBonificoModal();
     } catch (error) {
       console.error(error);
-      setSnackbar({
-        open: true,
-        message: 'Errore durante l’invio del bonifico.',
-        severity: 'error',
-      });
+      setSnackbar({ open: true, message: 'Errore durante l’invio del bonifico.', severity: 'error' });
     }
   };
-
 
   const handleChangePage = (event, newPage) => setPage(newPage);
   const handleChangeRowsPerPage = (event) => {
@@ -274,196 +260,250 @@ function DettaglioContocorrentePage() {
 
   return (
     <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
-      {/* Pulsante per Nuovo Bonifico */}
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+      {/* --- Saldi --- */}
+      <Paper elevation={3} sx={{ p: 3, mb: 2 }}>
+        <Grid container spacing={4}>
+          <Grid item xs={12} md={6}>
+            <Typography variant="h6">Saldo Disponibile</Typography>
+            <Typography variant="h4" sx={{ fontWeight: 'bold', color: conto.saldoDisponibile >= 0 ? 'success.main' : 'error.main' }}>
+              € {conto.saldoDisponibile?.toFixed(2) ?? 'N/D'}
+            </Typography>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <Typography variant="h6">Saldo Contabile</Typography>
+            <Typography variant="h4" sx={{ fontWeight: 'bold', color: conto.saldoContabile >= 0 ? 'success.main' : 'error.main' }}>
+              € {conto.saldoContabile?.toFixed(2) ?? 'N/D'}
+            </Typography>
+          </Grid>
+        </Grid>
+      </Paper>
+
+      {/* --- Dati tecnici --- */}
+      <Paper elevation={2} sx={{ p: 3, mb: 4 }}>
+        {[
+          { label: 'IBAN', value: conto.iban },
+          { label: 'NUMERO CONTO', value: conto.numeroConto },
+          { label: 'BIC', value: conto.bic },
+          { label: 'CAB', value: conto.cab },
+          { label: 'ABI', value: conto.abi },
+        ].map((item, index) => (
+          <Grid container spacing={2} sx={{ mb: 2 }} key={index}>
+            <Grid item xs={12} md={6}>
+              <Typography variant="subtitle2" color="text.secondary">{item.label}:</Typography>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <Typography variant="body1">{item.value ?? 'N/D'}</Typography>
+            </Grid>
+          </Grid>
+        ))}
+      </Paper>
+
+      {/* --- Carte associate --- */}
+      <Box sx={{ position: 'relative', mb: 4 }}>
+        <Typography variant="h6" gutterBottom>Carte associate</Typography>
+
+        {loadingCarte ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
+            <CircularProgress size={32} />
+          </Box>
+        ) : errorCarte ? (
+          <Alert severity="error">{errorCarte}</Alert>
+        ) : carteAssociate.length > 0 ? (
+          <>
+            <IconButton onClick={() => scroll('left')} sx={{
+              position: 'absolute', left: -10, top: '45%', zIndex: 1, backgroundColor: 'background.paper',
+            }}>
+              <ChevronLeftIcon />
+            </IconButton>
+
+            <Box
+              ref={scrollRef}
+              sx={{
+                display: 'flex',
+                overflowX: 'auto',
+                gap: 2,
+                scrollBehavior: 'smooth',
+                py: 2,
+                px: 5,
+                '&::-webkit-scrollbar': { height: 6 },
+                '&::-webkit-scrollbar-thumb': { backgroundColor: '#888', borderRadius: 3 },
+                '&::-webkit-scrollbar-thumb:hover': { backgroundColor: '#555' },
+              }}
+            >
+              {carteAssociate.map((carta, index) => (
+                <Box
+                  key={index}
+                  sx={{
+                    flex: '0 0 auto',
+                    minWidth: 280,
+                    cursor: 'pointer',
+                    transition: 'all 0.25s ease',
+                    borderRadius: 2,
+                    boxShadow: 2,
+                    '&:hover': { transform: 'translateY(-6px)', boxShadow: 6, backgroundColor: 'rgba(25, 118, 210, 0.1)' },
+                  }}
+                  onClick={() => navigate(`/home/dettaglio-carta/${carta.numeroCarta}`)}
+                >
+                  <CreditCard
+                    cardNumber={carta.numeroCarta}
+                    cardHolder={`${carta.intestatario}`}
+                    expiry={`${String(new Date(carta.dataScadenza).getMonth() + 1).padStart(2, '0')}/${String(new Date(carta.dataScadenza).getFullYear()).slice(-2)}`}
+                  />
+
+                </Box>
+              ))}
+            </Box>
+
+            <IconButton onClick={() => scroll('right')} sx={{
+              position: 'absolute', right: -10, top: '45%', zIndex: 1, backgroundColor: 'background.paper',
+            }}>
+              <ChevronRightIcon />
+            </IconButton>
+          </>
+        ) : (
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
+            Nessuna carta associata a questo conto.
+          </Typography>
+        )}
+      </Box>
+
+      {/* --- Limiti Bonifico --- */}
+      <Typography variant="h5" gutterBottom>Limiti Bonifico</Typography>
+      <Paper elevation={2} sx={{ p: 3, mb: 4 }}>
+        <Grid container spacing={2}>
+          <Grid item xs={12} md={6}>
+            <Typography>Soglia giornaliera: {conto.sogliaBonificiGiornaliera}€</Typography>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <Link component="button" variant="body2" onClick={() => handleOpenModal('sogliaBonificiGiornaliera', conto.sogliaBonificiGiornaliera)}>
+              Modifica
+            </Link>
+          </Grid>
+        </Grid>
+        <Grid container spacing={2}>
+          <Grid item xs={12} md={6}>
+            <Typography>Soglia mensile: {conto.sogliaBonificiMensile}€</Typography>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <Link component="button" variant="body2" onClick={() => handleOpenModal('sogliaBonificiMensile', conto.sogliaBonificiMensile)}>
+              Modifica
+            </Link>
+          </Grid>
+        </Grid>
+      </Paper>
+
+      {/* --- Transazioni --- */}
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+        <Typography variant="h5">Transazioni</Typography>
         <Button variant="contained" color="primary" onClick={handleOpenBonificoModal}>
           Nuovo Bonifico
         </Button>
       </Box>
 
-      {/* Dettagli Tecnici */}
-      <Typography variant="h5" gutterBottom>Dettagli Tecnici</Typography>
-      <Paper elevation={2} sx={{ p: 3, mb: 4 }}>
-        <Grid container spacing={2}>
-          <Grid item xs={12} sm={6}>
-            <Typography variant="subtitle2" color="text.secondary">IBAN</Typography>
-            <Typography>{conto.iban || 'N/D'}</Typography>
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <Typography variant="subtitle2" color="text.secondary">Numero Conto</Typography>
-            <Typography>{conto.numeroConto}</Typography>
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <Typography variant="subtitle2" color="text.secondary">BIC</Typography>
-            <Typography>{conto.bic}</Typography>
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <Typography variant="subtitle2" color="text.secondary">CAB</Typography>
-            <Typography>{conto.cab}</Typography>
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <Typography variant="subtitle2" color="text.secondary">ABI</Typography>
-            <Typography>{conto.abi}</Typography>
-          </Grid>
-        </Grid>
-      </Paper>
-
-      {/* Dati Conto e Soglie */}
-      <Typography variant="h5" gutterBottom>Dati Conto & Soglie</Typography>
-      <Paper elevation={2} sx={{ p: 3, mb: 4 }}>
-        <Grid container spacing={4}>
-          <Grid item xs={12} md={6}>
-            <Box sx={{ mb: 3 }}>
-              <Typography variant="subtitle2" color="text.secondary">Saldo Disponibile</Typography>
-              <Typography>€ {conto.saldoDisponibile?.toFixed(2) ?? 'N/D'}</Typography>
-            </Box>
-            <Box sx={{ mb: 3 }}>
-              <Typography variant="subtitle2" color="text.secondary">Saldo Contabile</Typography>
-              <Typography>€ {conto.saldoContabile?.toFixed(2) ?? 'N/D'}</Typography>
-            </Box>
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <Box sx={{ mb: 3 }}>
-              <Box display="flex" alignItems="center">
-                <Typography variant="subtitle2" color="text.secondary">Limite Bonifici Giornaliero</Typography>
-                <Link component="button" variant="body2" onClick={() => handleOpenModal('sogliaBonificiGiornaliera', conto.sogliaBonificiGiornaliera)} sx={{ ml: 2 }}>Modifica</Link>
-              </Box>
-              <Typography>€ {conto.sogliaBonificiGiornaliera?.toFixed(2) ?? 'N/D'}</Typography>
-            </Box>
-            <Box>
-              <Box display="flex" alignItems="center">
-                <Typography variant="subtitle2" color="text.secondary">Limite Bonifici Mensile</Typography>
-                <Link component="button" variant="body2" onClick={() => handleOpenModal('sogliaBonificiMensile', conto.sogliaBonificiMensile)} sx={{ ml: 2 }}>Modifica</Link>
-              </Box>
-              <Typography>€ {conto.sogliaBonificiMensile?.toFixed(2) ?? 'N/D'}</Typography>
-            </Box>
-          </Grid>
-        </Grid>
-      </Paper>
-
-      {/* Transazioni Recenti */}
-      <Typography variant="h5" gutterBottom>Transazioni</Typography>
-      <Paper elevation={2}>
-        <TableContainer>
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell>ID Operazione</TableCell>
-                <TableCell>Data</TableCell>
-                <TableCell>IBAN Bonifico</TableCell>
-                <TableCell>Importo (€)</TableCell>
-                <TableCell>Causale</TableCell>
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>ID Operazione</TableCell>
+              <TableCell>Data</TableCell>
+              <TableCell>IBAN</TableCell>
+              <TableCell>Importo</TableCell>
+              <TableCell>Causale</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {transactions.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((tx) => (
+              <TableRow key={tx.idOperazione}>
+                <TableCell>{tx.idOperazione}</TableCell>
+                <TableCell>{tx.dataOperazione}</TableCell>
+                <TableCell>{tx.iban}</TableCell>
+                <TableCell sx={{ color: tx.importo >= 0 ? 'green' : 'red' }}>
+                  {tx.importo.toFixed(2)}€
+                </TableCell>
+                <TableCell>{tx.causale}</TableCell>
               </TableRow>
-            </TableHead>
-            <TableBody>
-              {transactions.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((tx) => (
-                <TableRow key={tx.idOperazione}>
-                  <TableCell>{tx.idOperazione}</TableCell>
-                  <TableCell>{tx.dataOperazione}</TableCell>
-                  <TableCell>{tx.iban}</TableCell>
-                  <TableCell sx={{ color: tx.importo >= 0 ? 'green' : 'red', fontWeight: 'bold' }}>
-                    {tx.importo >= 0 ? '+' : '-'}€ {Math.abs(tx.importo).toFixed(2)}
-                  </TableCell>
-                  <TableCell>{tx.causale}</TableCell>
-                </TableRow>
-              ))}
-              {transactions.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={5} align="center">
-                    Nessuna transazione disponibile
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
+            ))}
+          </TableBody>
+        </Table>
         <TablePagination
+          rowsPerPageOptions={[5, 10, 25]}
           component="div"
           count={transactions.length}
+          rowsPerPage={rowsPerPage}
           page={page}
           onPageChange={handleChangePage}
-          rowsPerPage={rowsPerPage}
           onRowsPerPageChange={handleChangeRowsPerPage}
-          rowsPerPageOptions={[5, 10, 25]}
         />
-      </Paper>
+      </TableContainer>
 
-      {/* Modal Modifica Soglie */}
+      {/* --- Modal modifica soglie --- */}
       <Modal open={modalOpen} onClose={handleCloseModal}>
         <Box sx={styleModal}>
-          <Typography variant="h6" gutterBottom>
-            Modifica {fieldToEdit === 'sogliaBonificiGiornaliera' ? 'Limite Giornaliero' : 'Limite Mensile'}
-          </Typography>
+          <Typography variant="h6" gutterBottom>Modifica {fieldToEdit}</Typography>
           <TextField
-            label="Nuova soglia (€)"
-            type="number"
             fullWidth
+            label="Nuova soglia"
+            type="number"
             value={fieldValue}
             onChange={(e) => setFieldValue(e.target.value)}
-            inputProps={{ min: 0 }}
-            sx={{ mb: 3 }}
           />
-          <Stack direction="row" spacing={2} justifyContent="flex-end">
-            <Button variant="outlined" onClick={handleCloseModal}>Annulla</Button>
-            <Button variant="contained" onClick={handleSave} disabled={fieldValue === '' || isNaN(Number(fieldValue))}>
-              Salva
-            </Button>
+          <Stack direction="row" spacing={2} sx={{ mt: 2, justifyContent: 'flex-end' }}>
+            <Button onClick={handleCloseModal}>Annulla</Button>
+            <Button variant="contained" onClick={handleSave}>Salva</Button>
           </Stack>
         </Box>
       </Modal>
 
-      {/* Modal Nuovo Bonifico */}
+      {/* --- Modal bonifico --- */}
       <Modal open={bonificoModalOpen} onClose={handleCloseBonificoModal}>
         <Box sx={styleModal}>
           <Typography variant="h6" gutterBottom>Nuovo Bonifico</Typography>
-          <Stack spacing={2}>
-            <TextField
-              label="IBAN Destinatario"
-              value={ibanDestinatario}
-              onChange={(e) => setIbanDestinatario(e.target.value)}
-              error={!!formErrors.ibanDestinatario}
-              helperText={formErrors.ibanDestinatario}
-            />
-            <TextField
-              label="Importo (€)"
-              type="number"
-              value={importo}
-              onChange={(e) => setImporto(e.target.value)}
-              error={!!formErrors.importo}
-              helperText={formErrors.importo}
-              InputProps={{
-                inputMode: 'decimal',
-                inputProps: { min: 0 }
-              }}
-            />
-
-            <TextField
-              label="Causale"
-              value={causale}
-              onChange={(e) => setCausale(e.target.value)}
-              error={!!formErrors.causale}
-              helperText={formErrors.causale}
-            />
-            <Stack direction="row" justifyContent="flex-end" spacing={2}>
-              <Button onClick={handleCloseBonificoModal}>Annulla</Button>
-              <Button variant="contained" onClick={handleSubmitBonifico}>Invia</Button>
-            </Stack>
+          <TextField
+            fullWidth
+            label="IBAN Destinatario"
+            value={ibanDestinatario}
+            onChange={(e) => setIbanDestinatario(e.target.value)}
+            error={!!formErrors.ibanDestinatario}
+            helperText={formErrors.ibanDestinatario}
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            fullWidth
+            label="Importo"
+            type="number"
+            value={importo}
+            onChange={(e) => setImporto(e.target.value)}
+            error={!!formErrors.importo}
+            helperText={formErrors.importo}
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            fullWidth
+            label="Causale"
+            value={causale}
+            onChange={(e) => setCausale(e.target.value)}
+            error={!!formErrors.causale}
+            helperText={formErrors.causale}
+            sx={{ mb: 2 }}
+          />
+          <Stack direction="row" spacing={2} sx={{ justifyContent: 'flex-end' }}>
+            <Button onClick={handleCloseBonificoModal}>Annulla</Button>
+            <Button variant="contained" onClick={handleSubmitBonifico}>Invia</Button>
           </Stack>
         </Box>
       </Modal>
 
-      {/* Snackbar notifiche */}
+      {/* --- Snackbar --- */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={4000}
-        onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
       >
         <MuiAlert
-          onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
-          severity={snackbar.severity}
           elevation={6}
           variant="filled"
+          severity={snackbar.severity}
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
         >
           {snackbar.message}
         </MuiAlert>
@@ -472,4 +512,4 @@ function DettaglioContocorrentePage() {
   );
 }
 
-export default DettaglioContocorrentePage;
+export default DettaglioContoCorrente;

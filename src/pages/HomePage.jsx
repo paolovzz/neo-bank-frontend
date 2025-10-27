@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, Outlet } from 'react-router-dom';
+import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 
 import {
   AppBar,
@@ -43,12 +43,13 @@ function parseJwt(token) {
 function HomePage({ toggleTheme, mode }) {
   const fetchWithAuth = useFetchWithAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const theme = useTheme();
   const isSmUp = useMediaQuery(theme.breakpoints.up('sm'));
 
   const [username, setUsername] = useState('');
   const [ibanMenuItems, setIbanMenuItems] = useState([]);
-  const [selectedIban, setSelectedIban] = useState(null);
+  const [selectedIban, setSelectedIban] = useState(localStorage.getItem('selectedIban') || null);
 
   const [userMenuAnchorEl, setUserMenuAnchorEl] = useState(null);
   const [ibanMenuAnchorEl, setIbanMenuAnchorEl] = useState(null);
@@ -59,6 +60,7 @@ function HomePage({ toggleTheme, mode }) {
   // 🔔 Stato per contatore notifiche
   const [unreadCount, setUnreadCount] = useState(0);
 
+  // Recupero username dal token
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
@@ -69,6 +71,7 @@ function HomePage({ toggleTheme, mode }) {
     }
   }, []);
 
+  // Fetch IBAN e notifiche
   useEffect(() => {
     const fetchIbans = async () => {
       try {
@@ -77,6 +80,13 @@ function HomePage({ toggleTheme, mode }) {
         if (!response.ok) throw new Error('Errore nel recupero degli IBAN');
         const data = await response.json();
         setIbanMenuItems(data);
+
+        // 🔹 Se non c'è un IBAN salvato, selezioniamo il primo
+        if (data.length > 0 && !localStorage.getItem('selectedIban')) {
+          localStorage.setItem('selectedIban', data[0]);
+          setSelectedIban(data[0]);
+          navigate('conto-corrente', { state: { iban: data[0] } });
+        }
       } catch (error) {
         console.error('Errore nel recupero degli IBAN:', error);
         setIbanMenuItems([]);
@@ -84,33 +94,35 @@ function HomePage({ toggleTheme, mode }) {
     };
     fetchIbans();
 
-    // 🔔 Simulazione fetch notifiche
+    // Simulazione fetch notifiche
     const fetchNotifiche = async () => {
       try {
-        // Simula fetch notifiche (da rimpiazzare con chiamata reale)
-        setUnreadCount(3); // Notifiche non lette
+        setUnreadCount(3);
       } catch (err) {
         console.error('Errore nel recupero notifiche:', err);
       }
     };
     fetchNotifiche();
-  }, [fetchWithAuth]);
+  }, [fetchWithAuth, navigate]);
 
-  const handleUserMenuOpen = (event) => {
-    setUserMenuAnchorEl(event.currentTarget);
-  };
+  // Gestione selezione/deselezione IBAN in base alla pagina
+  useEffect(() => {
+    const ibanSalvato = localStorage.getItem('selectedIban');
 
-  const handleUserMenuClose = () => {
-    setUserMenuAnchorEl(null);
-  };
+    if (location.pathname.includes('conto-corrente')) {
+      setSelectedIban(ibanSalvato);
+    } else {
+      setSelectedIban(null);
+    }
+  }, [location.pathname]);
 
-  const handleIbanMenuOpen = (event) => {
-    setIbanMenuAnchorEl(event.currentTarget);
-  };
+  // Menu user
+  const handleUserMenuOpen = (event) => setUserMenuAnchorEl(event.currentTarget);
+  const handleUserMenuClose = () => setUserMenuAnchorEl(null);
 
-  const handleIbanMenuClose = () => {
-    setIbanMenuAnchorEl(null);
-  };
+  // Menu IBAN
+  const handleIbanMenuOpen = (event) => setIbanMenuAnchorEl(event.currentTarget);
+  const handleIbanMenuClose = () => setIbanMenuAnchorEl(null);
 
   const handleProfile = () => {
     handleUserMenuClose();
@@ -124,9 +136,7 @@ function HomePage({ toggleTheme, mode }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       });
-      if (response && !response.ok) {
-        console.warn('Logout fallita sul server:', response.status);
-      }
+      if (response && !response.ok) console.warn('Logout fallita sul server:', response.status);
     } catch (error) {
       console.error('Errore di rete durante il logout:', error);
     } finally {
@@ -136,6 +146,7 @@ function HomePage({ toggleTheme, mode }) {
   };
 
   const handleSelectIban = (iban) => {
+    localStorage.setItem('selectedIban', iban);
     setSelectedIban(iban);
     handleIbanMenuClose();
     navigate('conto-corrente', { state: { iban } });
@@ -148,12 +159,7 @@ function HomePage({ toggleTheme, mode }) {
       <AppBar position="fixed" sx={{ zIndex: (t) => t.zIndex.drawer + 1 }}>
         <Toolbar>
           {/* Icona menu per mobile */}
-          <IconButton
-            color="inherit"
-            aria-label="menu"
-            edge="start"
-            sx={{ mr: 2, display: { sm: 'none' } }}
-          >
+          <IconButton color="inherit" aria-label="menu" edge="start" sx={{ mr: 2, display: { sm: 'none' } }}>
             <MenuIcon />
           </IconButton>
 
@@ -167,11 +173,9 @@ function HomePage({ toggleTheme, mode }) {
           />
 
           {/* Nome NEO BANK */}
-          <Typography variant="h6" noWrap sx={{ ml: 2 }}>
-            NEO BANK
-          </Typography>
+          <Typography variant="h6" noWrap sx={{ ml: 2 }}>NEO BANK</Typography>
 
-          {/* Menu a tendina IBAN */}
+          {/* Menu IBAN */}
           <Button color="inherit" onClick={handleIbanMenuOpen} sx={{ ml: 3, textTransform: 'none' }}>
             {selectedIban || 'Seleziona conto'}
           </Button>
@@ -197,12 +201,14 @@ function HomePage({ toggleTheme, mode }) {
             label={mode === 'dark' ? 'Dark' : 'Light'}
             sx={{ mr: 2 }}
           />
-          {/* 🔔 Icona notifiche */}
+
+          {/* Icona notifiche */}
           <IconButton size="large" color="inherit" sx={{ mr: 1 }}>
             <Badge badgeContent={unreadCount} color="error">
               <NotificationsIcon />
             </Badge>
           </IconButton>
+
           {/* Username */}
           <Typography variant="body2" sx={{ mr: 1, display: { xs: 'none', sm: 'block' } }}>
             {username}
