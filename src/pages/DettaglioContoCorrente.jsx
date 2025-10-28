@@ -227,12 +227,12 @@ function DettaglioContoCorrente() {
       importo: parseFloat(importo),
       causale,
     };
-
+    const bodyString = JSON.stringify(body)
     try {
       const response = await fetchWithAuth(`${import.meta.env.VITE_API_BASE_URL}/cc/predisponi-bonifico`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: bodyString,
       });
       if (!response.ok) throw new Error('Errore durante l’invio del bonifico');
 
