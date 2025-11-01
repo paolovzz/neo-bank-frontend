@@ -136,7 +136,7 @@ function DettaglioContoCorrente() {
       setLoadingTransazioni(true);
       setErrorTransazioni('');
 
-      let url = `${import.meta.env.VITE_API_BASE_URL}/transazioni/iban/${iban}`;
+      let url = `${import.meta.env.VITE_API_BASE_URL}/cc/${iban}/transazioni`;
       const params = [];
       if (dMin) params.push(`dataCreazioneMin=${dMin}`);
       if (dMax) params.push(`dataCreazioneMax=${dMax}`);
@@ -149,6 +149,7 @@ function DettaglioContoCorrente() {
       const data = await response.json();
       setTransactions(data.result);
     } catch (err) {
+      console.log(err)
       setErrorTransazioni('Errore durante il recupero delle transazioni.');
     } finally {
       setLoadingTransazioni(false);
