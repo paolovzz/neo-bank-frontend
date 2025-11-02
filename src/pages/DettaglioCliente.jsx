@@ -95,8 +95,7 @@ function DettaglioCliente() {
         const data = await response.json();
         setDatiCliente(data);
       } catch (err) {
-        console.error('Errore durante fetch profilo:', err);
-        setError('Impossibile caricare i dati utente');
+        setError(`Impossibile caricare i dati utente: ${err}`);
       } finally {
         setLoading(false);
       }
@@ -110,7 +109,7 @@ function DettaglioCliente() {
         setIbanList(ibanData);
       } catch (err) {
         console.error('Errore recupero IBAN:', err);
-        showSnackbar('Errore nel recupero degli IBAN', 'error');
+        showSnackbar(`Errore nel recupero degli IBAN: ${err}`, 'error');
       }
     };
 
@@ -158,7 +157,7 @@ function DettaglioCliente() {
       showSnackbar('Dati aggiornati con successo!', 'success');
     } catch (err) {
       console.error('Errore aggiornamento campo:', err);
-      showSnackbar('Errore durante l’aggiornamento. Riprova.', 'error');
+      showSnackbar(err, 'error');
     }
   };
 
@@ -175,7 +174,7 @@ function DettaglioCliente() {
       setTimeout(() => window.location.reload(), 1500);
     } catch (err) {
       console.error('Errore creazione conto:', err);
-      showSnackbar('Errore durante la creazione del conto.', 'error');
+      showSnackbar(err, 'error');
     }
   };
 

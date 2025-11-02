@@ -59,6 +59,24 @@ function SignPage() {
       newErrors.email = 'Email non valida';
     }
 
+    if (formData.dataNascita) {
+      const today = new Date();
+      const birthDate = new Date(formData.dataNascita);
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      if (age < 18) {
+        newErrors.dataNascita = 'Devi essere maggiorenne per aprire un conto bancario';
+      }
+    }
+    const cfRegex = /^[A-Z]{6}[0-9LMNPQRSTUV]{2}[A-Z][0-9LMNPQRSTUV]{2}[A-Z][0-9LMNPQRSTUV]{3}[A-Z]$/i;
+    if (formData.codiceFiscale && !cfRegex.test(formData.codiceFiscale.trim())) {
+      newErrors.codiceFiscale = 'Codice fiscale non valido';
+    }
+
     return newErrors;
   };
 

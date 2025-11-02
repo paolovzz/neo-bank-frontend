@@ -275,7 +275,7 @@ function DettaglioContoCorrente() {
       fetchTransazioni(); // aggiorna la lista dopo un bonifico
     } catch (error) {
       console.error(error);
-      setSnackbar({ open: true, message: 'Errore durante l’invio del bonifico.', severity: 'error' });
+      setSnackbar({ open: true, message: error, severity: 'error' });
     }
   };
 
@@ -298,7 +298,7 @@ function DettaglioContoCorrente() {
       }, 1500);
     } catch (error) {
       console.error(error);
-      setSnackbar({ open: true, message: 'Errore durante la richiesta della carta.', severity: 'error' });
+      setSnackbar({ open: true, message: error, severity: 'error' });
     }
   };
 

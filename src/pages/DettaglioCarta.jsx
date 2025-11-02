@@ -59,7 +59,7 @@ function DettaglioCarta() {
       setCarta(normalizeCarta(data));
     } catch (err) {
       console.error(err);
-      setError('Errore nel caricamento dei dati della carta.');
+      setError(err);
     } finally {
       setLoading(false);
     }
@@ -108,7 +108,7 @@ function DettaglioCarta() {
       setSnackbar({ open: true, message: 'Limite aggiornato con successo.', severity: 'success' });
     } catch (err) {
       console.error(err);
-      setSnackbar({ open: true, message: 'Errore durante l’aggiornamento del limite.', severity: 'error' });
+      setSnackbar({ open: true, message: err, severity: 'error' });
     } finally {
       handleCloseModal();
     }
@@ -135,7 +135,7 @@ function DettaglioCarta() {
     } catch (err) {
       console.error(err);
       setCarta(prev => ({ ...prev, statoCarta: previous }));
-      setSnackbar({ open: true, message: 'Errore durante la modifica dello stato.', severity: 'error' });
+      setSnackbar({ open: true, message: err, severity: 'error' });
     }
   };
 
@@ -168,7 +168,7 @@ function DettaglioCarta() {
     } catch (err) {
       console.error(err);
       setCarta(prev => ({ ...prev, abilitazionePagamentiOnline: previous }));
-      setSnackbar({ open: true, message: 'Errore durante la modifica degli acquisti online.', severity: 'error' });
+      setSnackbar({ open: true, message: err, severity: 'error' });
     }
   };
 
@@ -244,7 +244,6 @@ function DettaglioCarta() {
           />
         </Box>
 
-        {/* ✅ Pagamenti online come booleano */}
         <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
           <Typography sx={{ mr: 1 }}>
             <strong>Pagamenti online:</strong>
