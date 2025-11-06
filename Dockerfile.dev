@@ -1,0 +1,19 @@
+# Dockerfile.dev
+FROM node:20
+
+WORKDIR /app
+
+# Copia package.json e package-lock.json
+COPY package*.json ./
+
+# Installa dipendenze
+RUN npm install
+
+# Copia il resto del codice
+COPY . .
+
+# Espone porta Vite
+EXPOSE 5173
+
+# Comando per dev server
+CMD ["npm", "run", "dev"]

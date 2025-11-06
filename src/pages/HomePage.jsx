@@ -20,7 +20,6 @@ import {
 import { useTheme } from '@mui/material/styles';
 import MenuIcon from '@mui/icons-material/Menu';
 import AccountCircle from '@mui/icons-material/AccountCircle';
-import NotificationsIcon from '@mui/icons-material/Notifications';
 
 import { useFetchWithAuth } from './../helper/api';
 
