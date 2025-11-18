@@ -43,42 +43,58 @@ function SignPage() {
   };
 
   const validate = () => {
-    const newErrors = {};
-    Object.entries(formData).forEach(([key, value]) => {
-      if (!value.trim()) {
-        newErrors[key] = 'Campo obbligatorio';
-      }
-    });
+  const newErrors = {};
 
-    if (formData.password !== formData.confermaPassword) {
-      newErrors.confermaPassword = 'Le password non coincidono';
+  Object.entries(formData).forEach(([key, value]) => {
+    if (!value.trim()) {
+      newErrors[key] = 'Campo obbligatorio';
     }
+  });
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (formData.email && !emailRegex.test(formData.email)) {
-      newErrors.email = 'Email non valida';
+  const nameRegex = /^[A-Za-zÀ-ÖØ-öø-ÿ'’\s]+$/; 
+  if (formData.nome && !nameRegex.test(formData.nome.trim())) {
+    newErrors.nome = 'Il nome può contenere solo lettere, spazi e apostrofi';
+  }
+  if (formData.cognome && !nameRegex.test(formData.cognome.trim())) {
+    newErrors.cognome = 'Il cognome può contenere solo lettere, spazi e apostrofi';
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (formData.email && !emailRegex.test(formData.email)) {
+    newErrors.email = 'Email non valida';
+  }
+
+  const phoneRegex = /^[0-9+\s]+$/;
+  if (formData.telefono && !phoneRegex.test(formData.telefono.trim())) {
+    newErrors.telefono = 'Il numero di telefono può contenere solo cifre, + e spazi';
+  }
+
+  if (formData.password !== formData.confermaPassword) {
+    newErrors.confermaPassword = 'Le password non coincidono';
+  }
+
+  if (formData.dataNascita) {
+    const today = new Date();
+    const birthDate = new Date(formData.dataNascita);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
     }
-
-    if (formData.dataNascita) {
-      const today = new Date();
-      const birthDate = new Date(formData.dataNascita);
-      let age = today.getFullYear() - birthDate.getFullYear();
-      const monthDiff = today.getMonth() - birthDate.getMonth();
-
-      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-        age--;
-      }
-      if (age < 18) {
-        newErrors.dataNascita = 'Devi essere maggiorenne per aprire un conto bancario';
-      }
+    if (age < 18) {
+      newErrors.dataNascita = 'Devi essere maggiorenne per aprire un conto bancario';
     }
-    const cfRegex = /^[A-Z]{6}[0-9LMNPQRSTUV]{2}[A-Z][0-9LMNPQRSTUV]{2}[A-Z][0-9LMNPQRSTUV]{3}[A-Z]$/i;
-    if (formData.codiceFiscale && !cfRegex.test(formData.codiceFiscale.trim())) {
-      newErrors.codiceFiscale = 'Codice fiscale non valido';
-    }
+  }
 
-    return newErrors;
-  };
+  const cfRegex = /^[A-Z]{6}[0-9LMNPQRSTUV]{2}[A-Z][0-9LMNPQRSTUV]{2}[A-Z][0-9LMNPQRSTUV]{3}[A-Z]$/i;
+  if (formData.codiceFiscale && !cfRegex.test(formData.codiceFiscale.trim())) {
+    newErrors.codiceFiscale = 'Codice fiscale non valido';
+  }
+
+  return newErrors;
+};
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -116,8 +132,6 @@ function SignPage() {
           password: '',
           confermaPassword: ''
         });
-        // eventualmente redirect dopo registrazione, se vuoi:
-        // navigate('/login')
       }
     } catch (err) {
       console.error('Errore di rete:', err);
@@ -130,7 +144,7 @@ function SignPage() {
     <Container maxWidth="sm" sx={{ mt: 8 }}>
       <Paper elevation={3} sx={{ p: 4 }}>
         <Typography variant="h5" align="center" gutterBottom>
-          Registrazione
+          BENVENUTO IN NEO BANK
         </Typography>
         <Box component="form" onSubmit={handleSubmit} noValidate>
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>

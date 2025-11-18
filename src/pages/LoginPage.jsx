@@ -53,7 +53,7 @@ function LoginPage() {
     <Container maxWidth="xs">
       <Paper elevation={3} sx={{ padding: 4, mt: 8 }}>
         <Typography variant="h5" component="h2" gutterBottom>
-          Login
+          BENVENUTO IN NEO BANK
         </Typography>
 
         <Box component="form" onSubmit={handleLogin} noValidate sx={{ mt: 1 }}>

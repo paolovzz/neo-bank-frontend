@@ -292,7 +292,7 @@ function DettaglioCliente() {
       <Dialog open={confirmDialogOpen} onClose={() => setConfirmDialogOpen(false)}>
         <DialogTitle>Conferma</DialogTitle>
         <DialogContent>
-          <DialogContentText>Sei sicuro di voler creare un nuovo conto corrente?</DialogContentText>
+          <DialogContentText>Sei sicuro di voler aprire un nuovo conto corrente?</DialogContentText>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setConfirmDialogOpen(false)}>Annulla</Button>
