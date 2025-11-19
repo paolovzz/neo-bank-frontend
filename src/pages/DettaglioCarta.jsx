@@ -44,7 +44,6 @@ function DettaglioCarta() {
 
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
 
-  // ✅ Conversione abilitazionePagamentiOnline da stringa → boolean
   const normalizeCarta = data => ({
     ...data,
     abilitazionePagamentiOnline: data.abilitazionePagamentiOnline === 'ATTIVATA',
@@ -59,7 +58,7 @@ function DettaglioCarta() {
       setCarta(normalizeCarta(data));
     } catch (err) {
       console.error(err);
-      setError(err);
+      setError(err.toString());
     } finally {
       setLoading(false);
     }
@@ -107,8 +106,7 @@ function DettaglioCarta() {
 
       setSnackbar({ open: true, message: 'Limite aggiornato con successo.', severity: 'success' });
     } catch (err) {
-      console.error(err);
-      setSnackbar({ open: true, message: err, severity: 'error' });
+      setSnackbar({ open: true, message: 'Errore durante l’aggiornamento della soglia', severity: 'error' });
     } finally {
       handleCloseModal();
     }
@@ -135,11 +133,10 @@ function DettaglioCarta() {
     } catch (err) {
       console.error(err);
       setCarta(prev => ({ ...prev, statoCarta: previous }));
-      setSnackbar({ open: true, message: err, severity: 'error' });
+      setSnackbar({ open: true, message: err.toString(), severity: 'error' });
     }
   };
 
-  // ✅ Pagamenti online → invio booleano (true/false)
   const handleToggleAcquistiOnline = async () => {
     const nuovoValore = !carta.abilitazionePagamentiOnline;
     const previous = carta.abilitazionePagamentiOnline;
@@ -154,7 +151,7 @@ function DettaglioCarta() {
           body: JSON.stringify({
             numeroCarta,
             iban: carta.iban,
-            abilitazionePagamentiOnline: nuovoValore, // <-- ✅ booleano, non stringa
+            abilitazionePagamentiOnline: nuovoValore,
           }),
         }
       );
@@ -168,7 +165,7 @@ function DettaglioCarta() {
     } catch (err) {
       console.error(err);
       setCarta(prev => ({ ...prev, abilitazionePagamentiOnline: previous }));
-      setSnackbar({ open: true, message: err, severity: 'error' });
+      setSnackbar({ open: true, message: err.toString(), severity: 'error' });
     }
   };
 
@@ -310,11 +307,16 @@ function DettaglioCarta() {
         </Box>
       </Modal>
 
-      {/* Snackbar */}
+      {/* Snackbar centrato */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={4000}
         onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        sx={{
+          left: '50% !important',
+          transform: 'translateX(-50%) !important',
+        }}
       >
         <MuiAlert
           elevation={6}
