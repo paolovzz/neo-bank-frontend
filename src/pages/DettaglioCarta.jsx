@@ -121,7 +121,7 @@ function DettaglioCarta() {
       const response = await fetchWithAuth(`${import.meta.env.VITE_API_BASE_URL}/carte/stato-carta`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ numeroCarta, iban: carta.iban, statoCarta: nuovoStato === 'ATTIVA' }),
+        body: JSON.stringify({ numeroCarta,  statoCarta: nuovoStato === 'ATTIVA' }),
       });
 
       if (!response.ok) throw new Error('Errore aggiornamento stato');
@@ -150,7 +150,6 @@ function DettaglioCarta() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             numeroCarta,
-            iban: carta.iban,
             abilitazionePagamentiOnline: nuovoValore,
           }),
         }
